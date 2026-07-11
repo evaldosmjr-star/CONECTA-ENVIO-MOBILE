@@ -1,0 +1,26 @@
+{
+  "id": "LOTE-2026-07-11-001",
+  "nome": "Carteira Maria",
+  "data": "2026-07-11",
+  "configuracao": {
+    "intervaloMinimoSegundos": 45,
+    "intervaloMaximoSegundos": 60,
+    "quantidadePorBloco": 15,
+    "pausaMinimaMinutos": 20,
+    "pausaMaximaMinutos": 30,
+    "limiteDiario": 100,
+    "horaInicio": "08:00",
+    "horaFim": "18:00",
+    "tempoMaximoAguardandoConfirmacaoSegundos": 30,
+    "maximoTentativasPorContato": 3
+  },
+  "mensagens": [
+    "Oi, tudo bem? Eu falo com {nome}?",
+    "Ola! Poderia falar com {nome}?",
+    "Bom dia!"
+  ],
+  "contatos": [
+    { "id": "CLIENTE-001", "nome": "Joao da Silva", "telefone": "55 (99) 99999-9999" }
+  ]
+}
+

@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.ConectaDisparos" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground">#07111F</item>
+    </style>
+</resources>

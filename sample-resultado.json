@@ -1,0 +1,11 @@
+{
+  "batchId": "LOTE-2026-07-11-001",
+  "status": "CONCLUIDO",
+  "total": 100,
+  "enviados": 95,
+  "erros": 3,
+  "ignorados": 2,
+  "inicio": "2026-07-11T08:00:00",
+  "fim": "2026-07-11T17:20:00",
+  "resultados": []
+}

@@ -1,0 +1,39 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <queries>
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="com.whatsapp" />
+    </queries>
+    <application
+        android:name=".ConectaDisparosApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Conecta Disparos"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ConectaDisparos">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service
+            android:name=".core.ExecutionForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+        <receiver
+            android:name=".integration.macrodroid.MacroDroidConfirmationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="br.com.conectatecnologia.conectadisparos.ACTION_MESSAGE_SENT" />
+                <action android:name="br.com.conectatecnologia.conectadisparos.ACTION_MESSAGE_FAILED" />
+                <action android:name="br.com.conectatecnologia.conectadisparos.ACTION_SKIP_CONTACT" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
