@@ -43,6 +43,12 @@ class LocalBatchRepository(private val dao: BatchDao, private val json: Json = J
         dao.updateContact(batchId, contactId, status.name, attempts, error, System.currentTimeMillis())
 
     override suspend fun updateBatchStatus(batchId: String, status: BatchStatus) = dao.updateBatchStatus(batchId, status.name, System.currentTimeMillis())
+    override suspend fun resetBatchForResend(batchId: String) {
+        val now = System.currentTimeMillis()
+        dao.resetContacts(batchId, ContactStatus.PENDENTE.name, now)
+        dao.updateBatchStatus(batchId, BatchStatus.PRONTO.name, now)
+    }
+
     override suspend fun addHistory(event: HistoryEvent) = dao.addHistory(HistoryEntity(event.id, event.batchId, event.contactId, event.telefone, event.mensagem, event.status, event.tentativas, event.erro, event.bloco, event.posicao, event.timestamp))
     override suspend fun history(batchId: String): List<HistoryEvent> = dao.history(batchId).map { HistoryEvent(it.id, it.batchId, it.contactId, it.telefone, it.mensagem, it.status, it.tentativas, it.erro, it.bloco, it.posicao, it.timestamp) }
     override suspend fun deleteBatch(batchId: String, keepReport: Boolean) {

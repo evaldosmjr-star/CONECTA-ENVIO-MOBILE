@@ -49,6 +49,27 @@ class ExecutionEngine(
         _state.value = current.copy(status = BatchStatus.CANCELADO, waitingExternalConfirmation = false)
     }
 
+    fun confirmCurrentMessage() {
+        val current = _state.value
+        val batchId = current.batchId ?: return
+        val contactId = current.contactId ?: return
+        scope.launch { onExternalConfirmation(batchId, contactId, true) }
+    }
+
+    fun failCurrentMessage(error: String) {
+        val current = _state.value
+        val batchId = current.batchId ?: return
+        val contactId = current.contactId ?: return
+        scope.launch { onExternalConfirmation(batchId, contactId, false, error) }
+    }
+
+    fun skipCurrentContact(reason: String) {
+        val current = _state.value
+        val batchId = current.batchId ?: return
+        val contactId = current.contactId ?: return
+        scope.launch { skip(batchId, contactId, reason) }
+    }
+
     suspend fun onExternalConfirmation(batchId: String, contactId: String, sent: Boolean, error: String? = null) {
         val batch = repository.getBatch(batchId) ?: return
         val contact = batch.contatos.firstOrNull { it.id == contactId } ?: return

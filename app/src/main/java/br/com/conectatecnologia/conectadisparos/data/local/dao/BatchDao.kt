@@ -36,6 +36,9 @@ interface BatchDao {
     @Query("UPDATE contacts SET status = :status, tentativas = :attempts, erro = :error, updatedAt = :updatedAt WHERE batchId = :batchId AND id = :contactId")
     suspend fun updateContact(batchId: String, contactId: String, status: String, attempts: Int, error: String?, updatedAt: Long)
 
+    @Query("UPDATE contacts SET status = :status, tentativas = 0, erro = NULL, updatedAt = :updatedAt WHERE batchId = :batchId")
+    suspend fun resetContacts(batchId: String, status: String, updatedAt: Long)
+
     @Query("UPDATE batches SET status = :status, updatedAt = :updatedAt WHERE id = :batchId")
     suspend fun updateBatchStatus(batchId: String, status: String, updatedAt: Long)
 

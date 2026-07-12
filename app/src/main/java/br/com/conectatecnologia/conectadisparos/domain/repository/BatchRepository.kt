@@ -11,6 +11,7 @@ interface BatchRepository {
     suspend fun importBatch(batch: Batch, replaceExisting: Boolean = false)
     suspend fun updateContactStatus(batchId: String, contactId: String, status: ContactStatus, attempts: Int, error: String? = null)
     suspend fun updateBatchStatus(batchId: String, status: BatchStatus)
+    suspend fun resetBatchForResend(batchId: String)
     suspend fun addHistory(event: HistoryEvent)
     suspend fun history(batchId: String): List<HistoryEvent>
     suspend fun deleteBatch(batchId: String, keepReport: Boolean)

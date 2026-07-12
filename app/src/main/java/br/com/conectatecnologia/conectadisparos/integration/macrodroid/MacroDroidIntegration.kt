@@ -41,12 +41,20 @@ class MacroDroidBroadcaster(private val context: Context) {
 class MacroDroidConfirmationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext as ConectaDisparosApp
-        val batchId = intent.getStringExtra("batchId") ?: return
-        val contactId = intent.getStringExtra("contactId") ?: return
+        val batchId = intent.getStringExtra("batchId")
+        val contactId = intent.getStringExtra("contactId")
         when (intent.action) {
-            MacroDroidActions.MESSAGE_SENT -> app.confirmMessage(batchId, contactId)
-            MacroDroidActions.MESSAGE_FAILED -> app.failMessage(batchId, contactId, intent.getStringExtra("erro") ?: "Falha informada pelo MacroDroid.")
-            MacroDroidActions.SKIP_CONTACT -> app.skipContact(batchId, contactId, intent.getStringExtra("motivo") ?: "Ignorado pelo MacroDroid.")
+            MacroDroidActions.MESSAGE_SENT -> {
+                if (batchId != null && contactId != null) app.confirmMessage(batchId, contactId) else app.confirmCurrentMessage()
+            }
+            MacroDroidActions.MESSAGE_FAILED -> {
+                val error = intent.getStringExtra("erro") ?: "Falha informada pelo MacroDroid."
+                if (batchId != null && contactId != null) app.failMessage(batchId, contactId, error) else app.failCurrentMessage(error)
+            }
+            MacroDroidActions.SKIP_CONTACT -> {
+                val reason = intent.getStringExtra("motivo") ?: "Ignorado pelo MacroDroid."
+                if (batchId != null && contactId != null) app.skipContact(batchId, contactId, reason) else app.skipCurrentContact(reason)
+            }
         }
     }
 }
