@@ -13,20 +13,19 @@ import br.com.conectatecnologia.conectadisparos.navigation.Routes
 
 @Composable
 fun DashboardScreen(repository: BatchRepository, engine: ExecutionEngine, nav: NavController) {
-    val summary by repository.observeSummary().collectAsState(initial = null)
     Screen("Conecta Disparos") {
         Text("Operacao local para lotes do Conecta Loja", style = MaterialTheme.typography.titleMedium)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Metric("Enviados", summary?.enviados?.toString() ?: "0", Modifier.weight(1f))
-            Metric("Pendentes", summary?.pendentes?.toString() ?: "0", Modifier.weight(1f))
+            Metric("Enviados", "0", Modifier.weight(1f))
+            Metric("Pendentes", "0", Modifier.weight(1f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Metric("Erros", summary?.erros?.toString() ?: "0", Modifier.weight(1f))
-            Metric("Ignorados", summary?.ignorados?.toString() ?: "0", Modifier.weight(1f))
+            Metric("Erros", "0", Modifier.weight(1f))
+            Metric("Ignorados", "0", Modifier.weight(1f))
         }
-        Text("Status: ${summary?.status ?: "sem lote ativo"}")
+        Text("Status: sem lote ativo")
         Button(onClick = { nav.navigate(Routes.IMPORT) }, Modifier.fillMaxWidth()) { Text("Importar lote") }
-        Button(onClick = { summary?.batchId?.let(engine::start); nav.navigate(Routes.EXECUTION) }, Modifier.fillMaxWidth(), enabled = summary?.batchId != null) { Text("Iniciar ou continuar") }
+        Button(onClick = { nav.navigate(Routes.EXECUTION) }, Modifier.fillMaxWidth()) { Text("Iniciar ou continuar") }
         OutlinedButton(onClick = { engine.pause() }, Modifier.fillMaxWidth()) { Text("Pausar") }
         OutlinedButton(onClick = { nav.navigate(Routes.HISTORY) }, Modifier.fillMaxWidth()) { Text("Historico") }
         OutlinedButton(onClick = { nav.navigate(Routes.SETTINGS) }, Modifier.fillMaxWidth()) { Text("Configuracoes") }

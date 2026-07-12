@@ -10,5 +10,7 @@ local.defaults.properties
 keystore.properties
 *.jks
 *.keystore
+*.apk
 app/build/
 tmp_review*/
+emulator-*.png
