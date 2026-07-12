@@ -28,6 +28,7 @@ class ConectaDisparosApp : Application() {
     fun failMessage(batchId: String, contactId: String, error: String) { appScope.launch { engine.onExternalConfirmation(batchId, contactId, false, error) } }
     fun skipContact(batchId: String, contactId: String, reason: String) { appScope.launch { engine.skip(batchId, contactId, reason) } }
     fun confirmCurrentMessage() { engine.confirmCurrentMessage() }
+    fun confirmCurrentMessageOnReturn() { engine.confirmCurrentMessageOnReturn() }
     fun failCurrentMessage(error: String) { engine.failCurrentMessage(error) }
     fun skipCurrentContact(reason: String) { engine.skipCurrentContact(reason) }
 }

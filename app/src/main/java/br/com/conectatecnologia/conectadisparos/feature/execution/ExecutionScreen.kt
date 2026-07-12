@@ -24,7 +24,7 @@ fun ExecutionScreen(repository: BatchRepository, engine: ExecutionEngine, nav: N
         Text("Aguardando MacroDroid: ${if (state.waitingExternalConfirmation) "sim" else "nao"}")
         Text("Ultimo erro: ${state.lastError ?: "-"}")
         Button(
-            onClick = { activeBatchId?.let(engine::start) },
+            onClick = { activeBatchId?.let(engine::continueOrOpenNext) },
             enabled = activeBatchId != null,
             modifier = Modifier.fillMaxWidth()
         ) { Text("Abrir proximo contato") }
