@@ -28,6 +28,7 @@ class ExecutionEngine(
 ) {
     private companion object {
         const val AUTO_CONFIRM_SENT_AFTER_OPEN_MILLIS = 8_000L
+        const val MAX_NEXT_CONTACT_DELAY_MILLIS = 5_000L
     }
 
     private val selector = MessageSelector(random)
@@ -82,14 +83,22 @@ class ExecutionEngine(
         repository.updateContactStatus(batchId, contactId, status, contact.tentativas + if (sent) 0 else 1, error)
         repository.addHistory(HistoryEvent(batchId = batchId, contactId = contactId, telefone = contact.telefone, mensagem = null, status = status.name, tentativas = contact.tentativas, erro = error, bloco = 0, posicao = 0, timestamp = System.currentTimeMillis()))
         _state.value = _state.value.copy(waitingExternalConfirmation = false, lastError = error)
-        if (sent) delay(random.nextInt(batch.configuracao.intervaloMinimoSegundos, batch.configuracao.intervaloMaximoSegundos + 1) * 1000L)
-        start(batchId)
+        if (sent) delay(nextContactDelayMillis(batch))
+        runBatch(batchId)
     }
 
     suspend fun skip(batchId: String, contactId: String, reason: String) {
         repository.updateContactStatus(batchId, contactId, ContactStatus.IGNORADO, 0, reason)
         repository.addHistory(HistoryEvent(batchId = batchId, contactId = contactId, telefone = null, mensagem = null, status = ContactStatus.IGNORADO.name, tentativas = 0, erro = reason, bloco = 0, posicao = 0, timestamp = System.currentTimeMillis()))
-        start(batchId)
+        runBatch(batchId)
+    }
+
+    private fun nextContactDelayMillis(batch: Batch): Long {
+        val configuredMillis = random.nextInt(
+            batch.configuracao.intervaloMinimoSegundos,
+            batch.configuracao.intervaloMaximoSegundos + 1
+        ) * 1000L
+        return configuredMillis.coerceAtMost(MAX_NEXT_CONTACT_DELAY_MILLIS)
     }
 
     private suspend fun runBatch(batchId: String) {
