@@ -35,13 +35,16 @@ class ExecutionEngine(
     private val _state = MutableStateFlow(EngineState())
     val state: StateFlow<EngineState> = _state
     private var job: Job? = null
+    private var nextJob: Job? = null
 
     fun start(batchId: String) {
+        nextJob?.cancel()
         job?.cancel()
         job = scope.launch { runBatch(batchId) }
     }
 
     fun continueOrOpenNext(batchId: String) {
+        nextJob?.cancel()
         job?.cancel()
         job = scope.launch {
             closeWaitingContactIfNeeded(batchId)
@@ -51,12 +54,14 @@ class ExecutionEngine(
 
     fun pause() {
         val current = _state.value
+        nextJob?.cancel()
         current.batchId?.let { scope.launch { repository.updateBatchStatus(it, BatchStatus.PAUSADO) } }
         _state.value = current.copy(status = BatchStatus.PAUSADO, waitingExternalConfirmation = false)
     }
 
     fun cancel() {
         val current = _state.value
+        nextJob?.cancel()
         job?.cancel()
         current.batchId?.let { scope.launch { repository.updateBatchStatus(it, BatchStatus.CANCELADO) } }
         _state.value = current.copy(status = BatchStatus.CANCELADO, waitingExternalConfirmation = false)
@@ -74,7 +79,12 @@ class ExecutionEngine(
         val openedAt = current.openedAtMillis ?: return
         if (!current.waitingExternalConfirmation) return
         if (System.currentTimeMillis() - openedAt < MIN_CONFIRM_ON_RETURN_MILLIS) return
-        confirmCurrentMessage()
+        val batchId = current.batchId ?: return
+        val contactId = current.contactId ?: return
+        scope.launch {
+            onExternalConfirmation(batchId, contactId, sent = true)
+            scheduleNextContact(batchId)
+        }
     }
 
     fun failCurrentMessage(error: String) {
@@ -119,6 +129,24 @@ class ExecutionEngine(
         repository.updateContactStatus(batchId, waiting.id, ContactStatus.ENVIADO, waiting.tentativas, null)
         repository.addHistory(HistoryEvent(batchId = batchId, contactId = waiting.id, telefone = waiting.telefone, mensagem = null, status = ContactStatus.ENVIADO.name, tentativas = waiting.tentativas, erro = null, bloco = 0, posicao = 0, timestamp = System.currentTimeMillis()))
         _state.value = _state.value.copy(batchId = batchId, contactId = null, waitingExternalConfirmation = false, openedAtMillis = null)
+    }
+
+    private suspend fun scheduleNextContact(batchId: String) {
+        val batch = repository.getBatch(batchId) ?: return
+        val delayMillis = random.nextInt(
+            batch.configuracao.intervaloMinimoSegundos,
+            batch.configuracao.intervaloMaximoSegundos + 1
+        ) * 1000L
+        nextJob?.cancel()
+        nextJob = scope.launch {
+            _state.value = _state.value.copy(
+                batchId = batchId,
+                status = BatchStatus.EM_EXECUCAO,
+                nextActionAt = System.currentTimeMillis() + delayMillis
+            )
+            delay(delayMillis)
+            runBatch(batchId)
+        }
     }
 
     private suspend fun runBatch(batchId: String) {
