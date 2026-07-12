@@ -28,8 +28,6 @@ class ExecutionEngine(
     private val random: Random = Random.Default
 ) {
     private companion object {
-        const val AUTO_CONFIRM_SENT_AFTER_OPEN_MILLIS = 8_000L
-        const val MAX_NEXT_CONTACT_DELAY_MILLIS = 5_000L
         const val MIN_CONFIRM_ON_RETURN_MILLIS = 2_000L
     }
 
@@ -44,11 +42,10 @@ class ExecutionEngine(
     }
 
     fun continueOrOpenNext(batchId: String) {
-        val current = _state.value
-        if (current.batchId == batchId && current.waitingExternalConfirmation && current.contactId != null) {
-            confirmCurrentMessage()
-        } else {
-            start(batchId)
+        job?.cancel()
+        job = scope.launch {
+            closeWaitingContactIfNeeded(batchId)
+            runBatch(batchId)
         }
     }
 
@@ -102,22 +99,26 @@ class ExecutionEngine(
         repository.updateContactStatus(batchId, contactId, status, contact.tentativas + if (sent) 0 else 1, error)
         repository.addHistory(HistoryEvent(batchId = batchId, contactId = contactId, telefone = contact.telefone, mensagem = null, status = status.name, tentativas = contact.tentativas, erro = error, bloco = 0, posicao = 0, timestamp = System.currentTimeMillis()))
         _state.value = _state.value.copy(waitingExternalConfirmation = false, lastError = error, openedAtMillis = null)
-        if (sent) delay(nextContactDelayMillis(batch))
-        start(batchId)
     }
 
     suspend fun skip(batchId: String, contactId: String, reason: String) {
         repository.updateContactStatus(batchId, contactId, ContactStatus.IGNORADO, 0, reason)
         repository.addHistory(HistoryEvent(batchId = batchId, contactId = contactId, telefone = null, mensagem = null, status = ContactStatus.IGNORADO.name, tentativas = 0, erro = reason, bloco = 0, posicao = 0, timestamp = System.currentTimeMillis()))
-        start(batchId)
     }
 
-    private fun nextContactDelayMillis(batch: Batch): Long {
-        val configuredMillis = random.nextInt(
-            batch.configuracao.intervaloMinimoSegundos,
-            batch.configuracao.intervaloMaximoSegundos + 1
-        ) * 1000L
-        return configuredMillis.coerceAtMost(MAX_NEXT_CONTACT_DELAY_MILLIS)
+    private suspend fun closeWaitingContactIfNeeded(batchId: String) {
+        val current = _state.value
+        val currentContactId = current.contactId
+        if (current.batchId == batchId && current.waitingExternalConfirmation && currentContactId != null) {
+            onExternalConfirmation(batchId, currentContactId, sent = true)
+            return
+        }
+
+        val batch = repository.getBatch(batchId) ?: return
+        val waiting = batch.contatos.firstOrNull { it.status == ContactStatus.AGUARDANDO_ENVIO } ?: return
+        repository.updateContactStatus(batchId, waiting.id, ContactStatus.ENVIADO, waiting.tentativas, null)
+        repository.addHistory(HistoryEvent(batchId = batchId, contactId = waiting.id, telefone = waiting.telefone, mensagem = null, status = ContactStatus.ENVIADO.name, tentativas = waiting.tentativas, erro = null, bloco = 0, posicao = 0, timestamp = System.currentTimeMillis()))
+        _state.value = _state.value.copy(batchId = batchId, contactId = null, waitingExternalConfirmation = false, openedAtMillis = null)
     }
 
     private suspend fun runBatch(batchId: String) {
@@ -138,10 +139,6 @@ class ExecutionEngine(
             broadcaster.contactOpened(batchId, pending.id, pending.nome, pending.telefone, message, batch.contatos.indexOf(pending) + 1, batch.contatos.size)
             broadcaster.waitingConfirmation(batchId, pending.id, pending.nome, pending.telefone, message, batch.contatos.indexOf(pending) + 1, batch.contatos.size)
             _state.value = _state.value.copy(contactId = pending.id, waitingExternalConfirmation = true, openedAtMillis = System.currentTimeMillis())
-            delay(AUTO_CONFIRM_SENT_AFTER_OPEN_MILLIS)
-            if (_state.value.waitingExternalConfirmation && _state.value.contactId == pending.id) {
-                onExternalConfirmation(batchId, pending.id, sent = true)
-            }
         } else {
             repository.updateContactStatus(batchId, pending.id, ContactStatus.ERRO, pending.tentativas + 1, opened.exceptionOrNull()?.message)
             _state.value = _state.value.copy(lastError = opened.exceptionOrNull()?.message)
