@@ -14,3 +14,4 @@ keystore.properties
 app/build/
 tmp_review*/
 emulator-*.png
+lote-teste-*.json
