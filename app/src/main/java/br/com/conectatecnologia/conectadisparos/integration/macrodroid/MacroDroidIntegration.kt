@@ -25,7 +25,6 @@ class MacroDroidBroadcaster(private val context: Context) {
 
     private fun send(action: String, batchId: String, contactId: String, nome: String, telefone: String, mensagem: String, posicao: Int, total: Int) {
         context.sendBroadcast(Intent(action).apply {
-            setPackage(context.packageName)
             putExtra("batchId", batchId)
             putExtra("contactId", contactId)
             putExtra("nome", nome)

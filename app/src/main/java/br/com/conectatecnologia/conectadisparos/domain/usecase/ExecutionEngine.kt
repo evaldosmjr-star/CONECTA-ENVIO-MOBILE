@@ -26,6 +26,10 @@ class ExecutionEngine(
     private val scope: CoroutineScope,
     private val random: Random = Random.Default
 ) {
+    private companion object {
+        const val AUTO_CONFIRM_SENT_AFTER_OPEN_MILLIS = 8_000L
+    }
+
     private val selector = MessageSelector(random)
     private val _state = MutableStateFlow(EngineState())
     val state: StateFlow<EngineState> = _state
@@ -106,9 +110,10 @@ class ExecutionEngine(
             broadcaster.contactOpened(batchId, pending.id, pending.nome, pending.telefone, message, batch.contatos.indexOf(pending) + 1, batch.contatos.size)
             broadcaster.waitingConfirmation(batchId, pending.id, pending.nome, pending.telefone, message, batch.contatos.indexOf(pending) + 1, batch.contatos.size)
             _state.value = _state.value.copy(contactId = pending.id, waitingExternalConfirmation = true)
-            withTimeoutOrNull(batch.configuracao.tempoMaximoAguardandoConfirmacaoSegundos * 1000L) {
-                while (_state.value.waitingExternalConfirmation) delay(500)
-            } ?: onExternalConfirmation(batchId, pending.id, sent = false, error = "Timeout aguardando confirmacao externa.")
+            delay(AUTO_CONFIRM_SENT_AFTER_OPEN_MILLIS)
+            if (_state.value.waitingExternalConfirmation && _state.value.contactId == pending.id) {
+                onExternalConfirmation(batchId, pending.id, sent = true)
+            }
         } else {
             repository.updateContactStatus(batchId, pending.id, ContactStatus.ERRO, pending.tentativas + 1, opened.exceptionOrNull()?.message)
             _state.value = _state.value.copy(lastError = opened.exceptionOrNull()?.message)
